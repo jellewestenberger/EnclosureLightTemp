@@ -20,8 +20,8 @@ port = 1883
 global base_topic
 global light_on
 lightport = 22
-lightoutput=gpiozero.OutputDevice(lightport,initial_value=True)
-
+# lightoutput=gpiozero.OutputDevice(lightport,initial_value=True)
+global base_topic
 base_topic = "homeassistant/light/enclosure"
 light_on= False
 # config_payload = "" 
@@ -29,10 +29,11 @@ light_on= False
 # publish.single(config_topic,payload=config_payload,hostname=hostname,client_id="viscode",auth={'username': username, 'password': password}, port =port)
 
 def on_connect(mqttc,obj, flags, rc):
+    global base_topic
     print("rc: ",str(rc))
     config_payload=  '{"~": "%s", "name": "Enclosure", "unique_id": "enclosure_light", "cmd_t": "~/set", "stat_t": "~/state", "schema": "json", "brightness": false }' % base_topic
     # config_payload="" 
-    mqttc.publish("homeassistant/light/enclosure/config",config_payload)
+    mqttc.publish(base_topic+"/config",config_payload)
     state_update()
 
 def on_message(mqttc, obj, msg):
@@ -54,11 +55,12 @@ def set_light():
     return success
 
 def state_update():
-    global light_on
+    global light_on, base_topic
+
     if light_on:
-        mqttc.publish("homeassistant/light/enclosure/state",'{"state": "ON"}',qos=1)
+        mqttc.publish(base_topic+"/state",'{"state": "ON"}',qos=1)
     else:
-        mqttc.publish("homeassistant/light/enclosure/state",'{"state": "OFF"}',qos=1)
+        mqttc.publish(base_topic+"/state",'{"state": "OFF"}',qos=1)
 
 def on_publish(mqttc, obj, mid):
     print("publish: \n")
@@ -79,5 +81,5 @@ mqttc.on_publish = on_publish
 mqttc.on_subscribe = on_subscribe
 
 mqttc.connect(host=hostname,port=port)
-mqttc.subscribe("homeassistant/light/enclosure/#")
+mqttc.subscribe(base_topic+"/#")
 mqttc.loop_forever()
