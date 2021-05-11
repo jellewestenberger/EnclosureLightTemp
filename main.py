@@ -5,7 +5,8 @@ import paho.mqtt.subscribe as subscribe
 import paho.mqtt.client as mqtt
 import credentials
 import threading
-# import gpiozero
+import gpiozero
+import Adafruit_DHT
 hostname = "192.168.178.44"
 username=credentials.username
 password=credentials.password
@@ -22,21 +23,20 @@ global base_topic_light
 global base_topic_hum
 global base_topic_temp
 global light_on
+light_on = False
 lightport = 27
-# global lightoutput
-# lightoutput=gpiozero.OutputDevice(lightport,initial_value=False)
+global lightoutput
+lightoutput=gpiozero.OutputDevice(lightport,initial_value=False)
+dhtsensor=Adafruit_DHT.AM2302
+dhtpin=4
 
 base_topic_light = "homeassistant/light/enclosure"
 base_topic_temp = "homeassistant/sensor/enclosure_temp"
-base_topic_hum = "homeassistant/sensor/enclosure_hum"
-
-# config_light = "" 
-
-# publish.single(config_topic,payload=config_light,hostname=hostname,client_id="viscode",auth={'username': username, 'password': password}, port =port)
+base_topic_hum = "homeassistant/sensor/enclosure_humidity"
 
 def on_connect(mqttc,obj, flags, rc):
     global base_topic_light
-    print("rc: ",str(rc))
+    print("Connected \n rc: ",str(rc))
     config_light=  '{"~": "%s", "name": "Enclosure", "unique_id": "enclosure_light", "cmd_t": "~/set", "stat_t": "~/state", "schema": "json", "brightness": false }' % base_topic_light
     config_temp = u'{"~": "%s","dev_cla": "temperature", "name": "enclosure_temp", "unit_of_meas": "\N{DEGREE SIGN}C", "stat_t": "~"}' % base_topic_temp
     config_hum = u'{"~": "%s","dev_cla": "humidity", "name": "enclosure_humidity", "unit_of_meas": "%%", "stat_t": "~"}' % base_topic_hum
@@ -44,6 +44,8 @@ def on_connect(mqttc,obj, flags, rc):
     mqttc.publish(base_topic_light+"/config",config_light)
     mqttc.publish(base_topic_temp+"/config",config_temp)
     mqttc.publish(base_topic_hum+"/config",config_hum)
+
+    check_light()   
     update_light()
 
 def on_message(mqttc, obj, msg):
@@ -61,15 +63,32 @@ def on_message(mqttc, obj, msg):
                
             
 def set_light():
-    # if light_on:
-    #     lightoutput.on()
-    # elif not light_on:
-    #     lightoutput.off()
-    success= True
+    try:
+        if light_on:
+            lightoutput.on()
+        elif not light_on:
+            lightoutput.off()
+        success= True
+    except:
+        success =False
+        print("Failed to set light")
     return success
 
+def check_light():
+    global lightoutput
+    global light_on
+    val = lightoutput.value
+    if val == 1: 
+        light_on = True
+        print "Light is on"
+    else:
+        light_on = False
+        print "Light is off"
+        
+
 def update_light():
-    global light_on, base_topic_light
+    global light_on
+    global base_topic_light
 
     if light_on:
         mqttc.publish(base_topic_light+"/state",'{"state": "ON"}',qos=1)
@@ -94,10 +113,17 @@ def on_log(mqttc, obj, level, string):
 
 
 def read_dht(sensor,pin,T, mqttc):
-    publish_dht(mqttc,25,54)
-    threading.Timer(T,read_dht,[sensor,pin,T,mqttc]).start()
-    print "test %d %d" % (sensor,pin)
+    hum, temp = Adafruit_DHT.read_retry(sensor,pin,2,0.5)
+    if hum is not None and temp is not None:
+        hum = round(hum,2)
+        temp = round(temp,2)
+        publish_dht(mqttc,temp,hum)
+        print("Temperature: %f \n Humidity: %f \n" % (hum, temp))        
+    else:
+        print('-1 | -1')    
 
+    threading.Timer(T,read_dht,[sensor,pin,T,mqttc]).start()
+    
 mqttc=mqtt.Client()
 mqttc.username_pw_set(username=username,password=password)
 mqttc.on_message = on_message
@@ -107,6 +133,6 @@ mqttc.on_subscribe = on_subscribe
 
 mqttc.connect(host=hostname,port=port)
 mqttc.subscribe(base_topic_light+"/#")
+read_dht(dhtsensor,dhtpin,15,mqttc)
 
-read_dht(1,3,5,mqttc)
 mqttc.loop_forever()
