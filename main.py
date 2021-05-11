@@ -19,9 +19,10 @@ port = 1883
 
 global base_topic
 global light_on
-lightport = 22
-# lightoutput=gpiozero.OutputDevice(lightport,initial_value=True)
-global base_topic
+lightport = 27
+global lightoutput
+lightoutput=gpiozero.OutputDevice(lightport,initial_value=False)
+
 base_topic = "homeassistant/light/enclosure"
 light_on= False
 # config_payload = "" 
@@ -51,6 +52,10 @@ def on_message(mqttc, obj, msg):
                
             
 def set_light():
+    if light_on:
+        lightoutput.on()
+    elif not light_on:
+        lightoutput.off()
     success= True
     return success
 
