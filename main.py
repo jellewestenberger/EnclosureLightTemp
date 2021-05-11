@@ -41,9 +41,9 @@ def on_connect(mqttc,obj, flags, rc):
     config_temp = u'{"~": "%s","dev_cla": "temperature", "name": "enclosure_temp", "unit_of_meas": "\N{DEGREE SIGN}C", "stat_t": "~"}' % base_topic_temp
     config_hum = u'{"~": "%s","dev_cla": "humidity", "name": "enclosure_humidity", "unit_of_meas": "%%", "stat_t": "~"}' % base_topic_hum
     # config_light="" 
-    mqttc.publish(base_topic_light+"/config",config_light)
-    mqttc.publish(base_topic_temp+"/config",config_temp)
-    mqttc.publish(base_topic_hum+"/config",config_hum)
+    mqttc.publish(base_topic_light+"/config",config_light,retain=True)
+    mqttc.publish(base_topic_temp+"/config",config_temp,retain=True)
+    mqttc.publish(base_topic_hum+"/config",config_hum,retain=True)
 
     check_light()   
     update_light()
