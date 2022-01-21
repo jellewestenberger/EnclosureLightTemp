@@ -7,7 +7,7 @@ import credentials
 import threading
 import gpiozero
 import Adafruit_DHT
-hostname = "192.168.178.44"
+hostname = credentials.mqtthost
 username=credentials.username
 password=credentials.password
 port = 1883 
@@ -80,10 +80,10 @@ def check_light():
     val = lightoutput.value
     if val == 1: 
         light_on = True
-        print "Light is on"
+        print("Light is on")
     else:
         light_on = False
-        print "Light is off"
+        print("Light is off")
         
 
 def update_light():
