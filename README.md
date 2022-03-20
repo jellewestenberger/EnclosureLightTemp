@@ -13,3 +13,34 @@ password = "yourmqttpassword"
 username= "yourmqttusername"
 
 also modify hostname and port in `main.py` according to your mqtt host settings
+
+## How to setup as service 
+You can set up any python script as systemctl service so that it automatically runs on boot and restarts after a crash. 
+
+First create your service file in `/etc/systemd/system/yourservice.service`
+
+`yourservice.service` contains:
+
+```
+[Unit]
+Description=Enclosure DHT read and Light Control
+After=multi-user.target
+
+[Service]
+Type=simple
+Restart=on-abort
+ExecStart=/usr/bin/python3 <path to main.py>
+User=<yourhostusername> 
+
+[Install]
+WantedBy=multi-user.target
+```
+Reload the deamon by running `sudo systemctl daemon-reload`
+
+Enable your service with `sudo systemctl enable yourservice.service`
+
+Start your service with `sudo systemctl start yourservice.service`
+
+Stop you service with `sudo systemctl stop yourservice.service`
+
+Check the status of your service with `sudo systemctl status yourservice.service`
