@@ -118,7 +118,7 @@ def read_dht(sensor,pin,T, mqttc):
         hum = round(hum,2)
         temp = round(temp,2)
         publish_dht(mqttc,temp,hum)
-        print("Temperature: %f \n Humidity: %f \n" % (hum, temp))        
+        print("Temperature: %f \n Humidity: %f \n" % (temp, hum))        
     else:
         print('-1 | -1')    
 
